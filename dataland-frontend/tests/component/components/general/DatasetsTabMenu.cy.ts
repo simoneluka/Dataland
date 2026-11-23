@@ -27,6 +27,7 @@ describe('Component tests for the tab used by logged-in users to switch pages', 
     MyDatasets = 'MY DATASETS',
     MyPortfolios = 'MY PORTFOLIOS',
     MyDataRequests = 'MY DATA REQUESTS',
+    Frameworks = 'FRAMEWORKS',
   }
 
   enum RoleBasedTabs {

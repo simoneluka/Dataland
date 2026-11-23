@@ -152,6 +152,15 @@ export const DatalandPreset = definePreset(Aura, {
     },
   },
   components: {
+    tree: {
+      node: {
+        selectedBackground: '{primary.color}',
+        selectedColor: '{primary.contrast.color}',
+      },
+      nodeIcon: {
+        selectedColor: '{primary.contrast.color}',
+      },
+    },
     button: {
       root: {
         borderRadius: '{border.radius.none}',

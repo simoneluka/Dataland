@@ -236,6 +236,16 @@ const routes = [
     name: 'Framework Documentation',
     component: SpecificationDocumentationPage,
     meta: {
+      initialTabId: 'frameworks',
+      requiresAuthentication: false,
+    },
+  },
+  {
+    path: '/documentation/frameworks/:frameworkId',
+    name: 'Framework Documentation Details',
+    component: SpecificationDocumentationPage,
+    meta: {
+      initialTabId: 'frameworks',
       requiresAuthentication: false,
     },
   },
