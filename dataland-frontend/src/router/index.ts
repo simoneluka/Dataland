@@ -26,6 +26,8 @@ const AdminRequestsOverview = (): Promise<RouteComponent> => import('@/component
 
 const ChooseFrameworkForDataUpload = (): Promise<RouteComponent> =>
   import('@/components/pages/ChooseFrameworkForDataUpload.vue');
+const SpecificationDocumentationPage = (): Promise<RouteComponent> =>
+  import('@/components/pages/SpecificationDocumentationPage.vue');
 const DatasetReviewOverview = (): Promise<RouteComponent> => import('@/components/pages/DatasetReviewOverview.vue');
 import PlatformRedirect from '@/components/pages/PlatformRedirect.vue';
 import KeycloakRedirect from '@/components/pages/KeycloakRedirect.vue';
@@ -227,6 +229,14 @@ const routes = [
     component: UnsubscribeFromMailsPage,
     meta: {
       requiresAuthentication: true,
+    },
+  },
+  {
+    path: '/documentation',
+    name: 'Framework Documentation',
+    component: SpecificationDocumentationPage,
+    meta: {
+      requiresAuthentication: false,
     },
   },
   {
