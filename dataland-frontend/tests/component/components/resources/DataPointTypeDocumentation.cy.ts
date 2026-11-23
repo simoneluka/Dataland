@@ -28,11 +28,16 @@ describe('Component test for DataPointTypeDocumentation', () => {
   });
 
   it('shows an error message if loading fails', () => {
-    cy.intercept('GET', '**/data-point-types/broken', { statusCode: 500, body: {} });
+    cy.intercept('GET', '**/data-point-types/broken', {
+      statusCode: 500,
+      body: { errors: [{ summary: 'Server error', message: 'Something went wrong' }] },
+    });
     cy.mountWithPlugins(DataPointTypeDocumentation, {
       keycloak: minimalKeycloakMock({}),
       props: { dataPointTypeId: 'broken' },
     });
-    cy.get('[data-test="data-point-type-documentation-error"]', { timeout: 15000 }).should('be.visible');
+    cy.get('[data-test="data-point-type-documentation-error"]', { timeout: 15000 })
+      .should('be.visible')
+      .and('contain.text', 'Server error');
   });
 });
