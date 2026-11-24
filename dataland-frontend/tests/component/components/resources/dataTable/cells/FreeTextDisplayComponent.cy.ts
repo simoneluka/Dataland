@@ -1,12 +1,13 @@
 import FreeTextDisplayComponent from '@/components/resources/dataTable/cells/FreeTextDisplayComponent.vue';
+import { MLDTDisplayComponentName } from '@/components/resources/dataTable/MultiLayerDataTableCellDisplayer';
 
 const shortTestString = 'Short String';
 
 it('Should entirely display a short string without an expand option', () => {
-  // @ts-ignore
   cy.mountWithPlugins(FreeTextDisplayComponent, {
     props: {
       content: {
+        displayComponentName: MLDTDisplayComponentName.FreeTextDisplayComponent,
         displayValue: shortTestString,
       },
     },
@@ -19,10 +20,10 @@ it('Should entirely display a short string without an expand option', () => {
 const longText = 'long'.repeat(100);
 
 it('Should initially show the collapsed string but allow expanding for longer texts', () => {
-  // @ts-ignore
   cy.mountWithPlugins(FreeTextDisplayComponent, {
     props: {
       content: {
+        displayComponentName: MLDTDisplayComponentName.FreeTextDisplayComponent,
         displayValue: longText,
       },
     },

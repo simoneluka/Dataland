@@ -2,13 +2,15 @@ import DocumentDownloadLink from '@/components/resources/frameworkDataSearch/Doc
 import DataPointDataTable from '@/components/general/DataPointDataTable.vue';
 import { minimalKeycloakMock } from '@ct/testUtils/Keycloak';
 import { DataTypeEnum } from '@clients/backend';
+import axios, { type AxiosAdapter, type AxiosProgressEvent } from 'axios';
 
 describe('check that the document link component works and is displayed correctly for a logged in user', function (): void {
   it('Check that there are no icons before and after triggering a download', function (): void {
-    cy.intercept('**/documents/dummyFile**', {
+    cy.intercept('GET', '**/documents/dummyFileReference', {
       statusCode: 200,
+      headers: { 'content-type': 'application/pdf' },
+      body: 'Test document',
     }).as('downloadComplete');
-    //@ts-ignore
     cy.mountWithPlugins(DocumentDownloadLink, {
       keycloak: minimalKeycloakMock({}),
 
@@ -19,17 +21,36 @@ describe('check that the document link component works and is displayed correctl
           dataType: DataTypeEnum.Lksg,
         },
       },
-    }).then(() => {
-      validateNoIcons();
-      cy.get('[data-test="download-link-Test"]').click();
-      cy.wait('@downloadComplete').then(() => {
-        validateNoIcons();
-      });
     });
+    cy.get('[data-test="download-link-Test"]').should('be.visible');
+    validateNoIcons();
+    cy.get('[data-test="download-icon"]').should('not.exist');
+    cy.get('[data-test="download-link-Test"]').click();
+    cy.wait('@downloadComplete');
+    cy.get('[data-test="report-Test-link"]')
+      .should('have.attr', 'href')
+      .and('match', /^blob:/);
+    validateNoIcons();
+    cy.get('[data-test="download-icon"]').should('not.exist');
   });
 
-  it('Check that Download Progress Spinner appears for a logged in user if the prop changes', function (): void {
-    //@ts-ignore
+  it('Shows download progress and restores the download icon after completion', function (): void {
+    // Hold the response so each progress state can be checked before the download finishes.
+    const response = Promise.withResolvers<void>();
+    let reportProgress: ((event: AxiosProgressEvent) => void) | undefined;
+    const adapter: AxiosAdapter = async (config) => {
+      reportProgress = config.onDownloadProgress;
+      reportProgress?.({ loaded: 50, total: 100, bytes: 50, lengthComputable: true });
+      await response.promise;
+      return {
+        config,
+        data: new ArrayBuffer(100),
+        status: 200,
+        statusText: 'OK',
+        headers: { 'content-type': 'application/pdf' },
+      };
+    };
+    cy.stub(axios.defaults, 'adapter').value(adapter);
     cy.mountWithPlugins(DocumentDownloadLink, {
       keycloak: minimalKeycloakMock({
         authenticated: true,
@@ -43,63 +64,30 @@ describe('check that the document link component works and is displayed correctl
         },
         showIcon: true,
       },
-    }).then((mounted) => {
-      validateNoIcons();
-
-      mounted.wrapper.vm.percentCompleted = 50;
-
-      cy.get('[data-test="spinner-icon"]').should('exist');
-      cy.get('[data-test="percentage-text"]').should('exist').should('have.text', ' (50%) ');
     });
-  });
+    cy.get('[data-test="download-icon"]').should('be.visible');
+    validateNoIcons();
+    cy.get('[data-test="download-link-Test"]').click();
+    cy.get('[data-test="spinner-icon"]').should('be.visible');
+    cy.get('[data-test="percentage-text"]').should('be.visible').and('contain.text', '(50%)');
+    cy.get('[data-test="download-icon"]').should('not.exist');
 
-  it('Check that Download Progress Spinner disappears for a logged in user and the checkmark appears', function (): void {
-    //@ts-ignore
-    cy.mountWithPlugins(DocumentDownloadLink, {
-      keycloak: minimalKeycloakMock({
-        authenticated: true,
-      }),
-
-      props: {
-        documentDownloadInfo: {
-          downloadName: 'Test',
-          fileReference: 'dummyFileReference',
-          dataType: DataTypeEnum.Lksg,
-        },
-      },
-    }).then((mounted) => {
-      mounted.wrapper.vm.percentCompleted = 50;
-      mounted.wrapper.vm.percentCompleted = 100;
-
-      cy.get('[data-test="spinner-icon"]').should('not.exist');
-      cy.get('[data-test="percentage-text"]').should('not.exist');
+    cy.then(() => {
+      reportProgress?.({ loaded: 100, total: 100, bytes: 50, lengthComputable: true });
     });
-  });
-
-  it('Check that Download Progress Checkmark disappears again for a logged in user', function (): void {
-    //@ts-ignore
-    cy.mountWithPlugins(DocumentDownloadLink, {
-      keycloak: minimalKeycloakMock({
-        authenticated: true,
-      }),
-
-      props: {
-        documentDownloadInfo: {
-          downloadName: 'Test',
-          fileReference: 'dummyFileReference',
-        },
-      },
-    }).then((mounted) => {
-      mounted.wrapper.vm.percentCompleted = 50;
-      mounted.wrapper.vm.percentCompleted = 100;
-      mounted.wrapper.vm.percentCompleted = undefined;
-
-      validateNoIcons();
+    validateNoIcons();
+    cy.get('[data-test="download-icon"]').should('not.exist');
+    cy.then(() => {
+      response.resolve();
     });
+    cy.get('[data-test="report-Test-link"]')
+      .should('have.attr', 'href')
+      .and('match', /^blob:/);
+    cy.get('[data-test="download-icon"]').should('be.visible');
+    validateNoIcons();
   });
 
   it('Check that document download link behaves as expected for a non logged in user', function (): void {
-    //@ts-ignore
     cy.mountWithPlugins(DocumentDownloadLink, {
       keycloak: minimalKeycloakMock({
         authenticated: false,
@@ -111,45 +99,45 @@ describe('check that the document link component works and is displayed correctl
           fileReference: 'dummyFileReference',
         },
       },
-    }).then(() => {
-      cy.get('[data-test="download-icon"]').should('not.exist');
-      cy.get('[data-test="spinner-icon"]').should('not.exist');
-      cy.get('[data-test="download-text-Test"]').should('not.have.attr', '@click');
     });
+    cy.get('[data-test="download-text-Test"]').should('be.visible').and('have.text', 'Test');
+    cy.get('[data-test="download-link-Test"]').should('not.exist');
+    cy.get('[data-test="download-icon"]').should('not.exist');
+    validateNoIcons();
   });
 
   it('Check that the label does not display "page" when page number is null', function (): void {
-    //@ts-ignore
     cy.mountWithPlugins(DataPointDataTable, {
       keycloak: minimalKeycloakMock({
         authenticated: true,
       }),
-      data() {
-        return {
-          dialogData: {
-            dataPointDisplay: {
-              value: 'Some Value',
-              quality: 'Some quality',
-              dataSource: {
-                fileName: 'FileName',
-                page: null,
+      global: {
+        provide: {
+          dialogRef: {
+            data: {
+              dataPointDisplay: {
+                value: 'Some Value',
+                quality: 'Some quality',
+                dataSource: {
+                  fileName: 'FileName',
+                  fileReference: 'dummyFileReference',
+                  page: null,
+                },
+                comment: 'Some comment',
               },
-              comment: 'Some comment',
+              dataId: '12345',
+              dataType: DataTypeEnum.EutaxonomyFinancials,
             },
-            dataId: '12345',
-            dataType: DataTypeEnum.EutaxonomyFinancials,
           },
-        };
+        },
       },
-    }).then(() => {
-      cy.get('[data-test="download-link-FileName"]').should('contain', 'FileName');
-      cy.get('[data-test="download-link-FileName"]').should('not.contain', 'page');
     });
+    cy.get('[data-test="download-link-FileName"]').should('contain.text', 'FileName');
+    cy.contains('th', /^Pages?$/).should('not.exist');
   });
 
   it('Check that long document names are truncated with ellipsis', function (): void {
     const longName = 'ThisIsAVeryLongDocumentNameThatShouldBeTruncatedAndNotFullyVisibleInTheButton';
-    //@ts-ignore
     cy.mountWithPlugins(DocumentDownloadLink, {
       keycloak: minimalKeycloakMock({ authenticated: true }),
       props: {
@@ -171,7 +159,7 @@ describe('check that the document link component works and is displayed correctl
 });
 
 /**
- * Checks that no icons exist
+ * Checks that neither the progress spinner nor its percentage is shown.
  */
 function validateNoIcons(): void {
   cy.get('[data-test="spinner-icon"]').should('not.exist');

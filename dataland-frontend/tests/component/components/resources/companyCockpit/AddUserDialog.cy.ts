@@ -1,5 +1,6 @@
 import { minimalKeycloakMock } from '@ct/testUtils/Keycloak';
 import AddMemberDialog from '@/components/resources/companyCockpit/AddUserDialog.vue';
+import { CompanyRole } from '@clients/communitymanager';
 
 /**
  * Helper to add a user by email
@@ -37,6 +38,9 @@ function selectFirstSuggestedUserAndCheckSuggestedTag(): void {
 }
 
 describe('AddMemberDialog Component Tests', function () {
+  const companyId = 'company-123';
+  const role = CompanyRole.Admin;
+  const assignRoleUrl = `**/company-role-assignments/${role}/${companyId}/*`;
   const existingUsers = [{ userId: '1', email: 'existing@test.com', firstName: 'Existing', lastName: 'User' }];
 
   beforeEach(function () {
@@ -81,9 +85,9 @@ describe('AddMemberDialog Component Tests', function () {
       req.reply(response);
     });
 
-    cy.intercept('POST', '**/company-role-assignments/*/*/*', { statusCode: 200 }).as('assignRole');
+    cy.intercept('POST', assignRoleUrl, { statusCode: 200 }).as('assignRole');
 
-    cy.intercept('GET', '/community/emails/company-123/recommended-users', {
+    cy.intercept('GET', `/community/emails/${companyId}/recommended-users`, {
       statusCode: 200,
       body: [
         { id: '3', firstName: 'Jane', lastName: 'Doe', email: 'jane@doe.com' },
@@ -91,12 +95,12 @@ describe('AddMemberDialog Component Tests', function () {
       ],
     }).as('getRecommendedUsers');
 
-    // @ts-ignore
     cy.mountWithPlugins(AddMemberDialog, {
       props: {
-        companyId: 'company-123',
-        role: 'admin',
+        companyId,
+        role,
         existingUsers,
+        currentUserId: undefined,
       },
       keycloak: minimalKeycloakMock({}),
       global: {
@@ -203,7 +207,7 @@ describe('AddMemberDialog Component Tests', function () {
     });
 
     it('handles save API failure', function () {
-      cy.intercept('POST', '**/company-role-assignments/*/*/*', {
+      cy.intercept('POST', assignRoleUrl, {
         statusCode: 500,
         body: { errors: [{ message: 'Server error' }] },
       }).as('assignRoleError');
