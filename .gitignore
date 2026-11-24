@@ -56,3 +56,6 @@ gitinfo
 
 # Ignore devcontainer lock file
 .devcontainer/devcontainer-lock.json
+
+# Playwright MCP output
+.playwright-mcp/

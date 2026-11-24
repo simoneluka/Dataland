@@ -22,3 +22,13 @@ starting the stack: `COMPANY_SERVICE_PROVIDER=azure`, `AZURE_OPENAI_API_KEY`, `A
 `environments/.env.dev` uses the `${VAR:-default}` syntax, so values that are already set in the environment are kept.
 Secrets must never be committed. In the opencode sandbox, make sure it may reach `*.openai.azure.com` and
 `api.mailjet.com` over HTTPS (sbx network policy on the host).
+
+## Preparing the local Playwright MCP reader session
+
+With the local stack running, Google Chrome installed, and the pinned Playwright MCP package already in the local
+npm cache, run `bash developer-tools/playwrightLogin.sh` from the repository root. It uses `KEYCLOAK_READER_PASSWORD`
+from the environment and saves the authenticated browser state to `~/.cache/dataland-playwright/reader.json`
+with permissions `0600`. This file grants access to the local reader session; do not share or commit it.
+
+Enable Playwright in OpenCode with `/mcp`. If the session expires, rerun the script and restart the MCP connection.
+The script and MCP use the npm cache without downloading packages.

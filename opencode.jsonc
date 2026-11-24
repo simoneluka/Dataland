@@ -15,7 +15,28 @@
     "AGENTS.md"
   ],
   "share": "disabled",
+  // Playwright MCP is off by default; enable it on demand via /mcp and use the ui-reviewer agent.
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": [
+        "env",
+        "-u",
+        "KEYCLOAK_READER_PASSWORD",
+        "npx",
+        "--offline",
+        "--yes",
+        "@playwright/mcp@0.0.86",
+        "--isolated",
+        "--storage-state={env:HOME}/.cache/dataland-playwright/reader.json",
+        "--redact-url-params=access_token,code,session_state",
+        "--ignore-https-errors"
+      ],
+      "enabled": false
+    }
+  },
   "permission": {
+    "webfetch": "ask",
     "bash": {
       "git push --force*": "deny",
       "git push*": "ask",

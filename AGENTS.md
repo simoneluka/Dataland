@@ -22,6 +22,9 @@
 
 # Agentic AI Workflow
 
+- Work within the local project environment. Access external sources or services (including via the browser, shell, or subagents) only with the user's explicit permission. Use credentials only for the purpose the user authorized.
+- For Playwright visual checks, use the prepared local reader browser session. `developer-tools/playwrightLogin.sh` consumes `KEYCLOAK_READER_PASSWORD` when the user authorizes session setup. Never print or pass credentials, tokens, or saved session contents into agent context.
+
 - For ambiguous, cross-module, or architecture-heavy work, prefer a planning pass before editing.
 - For read-heavy investigation or review, prefer subagents so the main implementation thread stays focused.
 
