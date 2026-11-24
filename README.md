@@ -37,6 +37,14 @@ To explicitly mark a script executable, do:
 To add the provided git pre-hooks to your local development environment execute:
 `git config --local core.hookspath ./.githooks/`
 
+## Summarize Code Changes with AI
+The repository includes reusable prompts that summarize changes relative to the latest commit (`HEAD`). They first provide a short content summary, followed by a developer-focused overview of the changed files.
+
+- **VS Code:** In the Copilot Chat prompt picker, run `/summarize-changes` (prompt file: [`.github/prompts/summarize-changes.prompt.md`](.github/prompts/summarize-changes.prompt.md)). VS Code prompt files require the Local harness; see the [VS Code prompt files documentation](https://code.visualstudio.com/docs/agent-customization/prompt-files) for current availability and harness support.
+- **OpenCode:** Run `/summarize-changes` (command file: [`.opencode/command/summarize-changes.md`](.opencode/command/summarize-changes.md)). Restart OpenCode after first adding the command so it is discovered.
+
+The summary includes staged, unstaged, and untracked non-ignored changes. It does not modify or stage files.
+
 ## Environment Variables for Development
 Environment variables for local development are defined in `environments/.env.dev`. CI loads `.env.dev` together
 with `environments/.env.ci` for CI-specific overrides. Add new variables to `.env.dev` and, if they differ in CI,

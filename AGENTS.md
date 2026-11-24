@@ -104,6 +104,12 @@
 - Add or update tests when behavior changes, especially for user-facing features, API changes, and bug fixes.
 - When changing APIs, data models, persistence behavior, or generated clients, verify downstream consumers still compile and relevant tests still pass.
 
+# Documentation
+
+- When changing user-facing behavior, update the relevant existing documentation in the same change.
+- If it is unclear where documentation belongs or whether it is needed, ask instead of creating a new documentation location.
+- For new frontend pages with a selection panel and detail content, use the `dataland-new-master-detail-page` skill.
+
 # Generated OpenAPI And Clients
 
 - Several services publish OpenAPI specs that are used to generate clients for other modules.

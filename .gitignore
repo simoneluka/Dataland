@@ -52,6 +52,7 @@ gitinfo
 # Allow opencode configs, skills and agents
 !.opencode/skills/
 !.opencode/agents/
+!.opencode/command/
 
 # Ignore devcontainer lock file
 .devcontainer/devcontainer-lock.json
