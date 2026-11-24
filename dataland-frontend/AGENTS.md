@@ -19,6 +19,11 @@
 - Check Cypress E2E TypeScript compilation: `npm run checkcypresscompilation`
 - Check fake fixture compilation: `npm run checkfakefixturecompilation`
 - Generate fake fixtures: `npm run fakefixtures`
+- Take screenshots of pages as the reader user (visual check of a running local-dev stack, agent-friendly):
+  `SCREENSHOT_PATHS="/companies,/portfolios" npx cypress run --spec tests/e2e/devtools/PageScreenshots.ts --browser chrome`
+  - Needs the `KEYCLOAK_READER_PASSWORD` env variable (see `environments/.env.dev`).
+  - Output goes to `cypress/screenshots/PageScreenshots.ts/` (git-ignored); view the PNGs with an image-capable reader.
+  - The spec lives outside `tests/e2e/specs`, so it is not part of regular runs; `cypress.config.ts` only selects it when `SCREENSHOT_PATHS` is set.
 
 # Verification
 

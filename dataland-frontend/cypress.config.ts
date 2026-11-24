@@ -28,6 +28,7 @@ export default defineConfig({
         : '2',
     GRAFANA_ADMIN: process.env.GRAFANA_ADMIN,
     GRAFANA_PASSWORD: process.env.GRAFANA_PASSWORD,
+    SCREENSHOT_PATHS: process.env.SCREENSHOT_PATHS,
   },
   expose: {
     commit_id: require('git-commit-id')({ cwd: '../' }),
@@ -74,7 +75,9 @@ export default defineConfig({
         console.log(
           'Detected local development run. Running all tests per default. In order to run a specific test run npm run Cypress run --spec <./.../specific_test.ts>'
         );
-        config.specPattern = ['tests/e2e/specs'];
+        config.specPattern = process.env.SCREENSHOT_PATHS
+          ? ['tests/e2e/devtools/PageScreenshots.ts']
+          : ['tests/e2e/specs'];
         config.defaultCommandTimeout = 22000;
       } else {
         console.log('Detected preview / development CI environment. Only loading index.ts to run all tests');
