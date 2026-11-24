@@ -8,6 +8,13 @@
         icon="pi pi-pencil"
       />
       <Button @click="openDownload" data-test="download-portfolio" label="DOWNLOAD PORTFOLIO" icon="pi pi-download" />
+      <Button
+        :as="RouterLink"
+        :to="{ name: 'Portfolio Comparison', params: { portfolioId: props.portfolioId } }"
+        data-test="compare-portfolio"
+        label="COMPARE PORTFOLIO"
+        icon="pi pi-arrows-h"
+      />
       <div :title="!isUserDatalandMemberOrAdmin ? 'Only Dataland members can activate monitoring' : ''">
         <Button
           @click="openMonitoringModal(enrichedPortfolio, reload)"
@@ -69,6 +76,7 @@ import SuccessDialog from '@/components/general/SuccessDialog.vue';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import { computed, inject, onMounted, ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import { useDialog } from 'primevue/usedialog';
 import type Keycloak from 'keycloak-js';
 import { assertDefined } from '@/utils/TypeScriptUtils.ts';

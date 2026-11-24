@@ -105,8 +105,15 @@
                       >
                         {{ row.label }}
                       </button>
+                      <DataPointDocumentationLink
+                        v-if="documentationFields.frameworkId && documentPath(row.dataPointTypeId)"
+                        :framework-id="documentationFields.frameworkId"
+                        :path="documentPath(row.dataPointTypeId)"
+                        :label="row.label"
+                        :description="row.explanation"
+                      />
                       <em
-                        v-if="row.explanation"
+                        v-else-if="row.explanation"
                         class="material-icons inline-flex align-items-center ml-2 cursor-help"
                         aria-hidden="true"
                         v-tooltip.top="{ value: row.explanation }"
@@ -197,6 +204,8 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue';
+import DataPointDocumentationLink from '@/components/resources/DataPointDocumentationLink.vue';
+import { useFrameworkDocumentationFields } from '@/utils/useFrameworkDocumentationFields.ts';
 import MultiLayerDataTableCell from '@/components/resources/dataTable/MultiLayerDataTableCell.vue';
 import { getFrontendFrameworkDefinition } from '@/frameworks/FrontendFrameworkRegistry';
 import type { MLDTCellConfig, MLDTConfig } from '@/components/resources/dataTable/MultiLayerDataTableConfiguration';
@@ -253,6 +262,12 @@ const mldtConfig = computed<MLDTConfig<FrameworkData> | undefined>(
 const vTooltip = Tooltip;
 
 const frameworkRef = computed(() => props.framework);
+const documentationFields = useFrameworkDocumentationFields(() => props.framework);
+
+/** @param id the ID of the reviewed data point type */
+function documentPath(id: string | undefined): string {
+  return documentationFields.value.pathByTypeId.get(id ?? '') ?? '';
+}
 const dataIdRef = computed(() => props.dataId);
 
 const showMultipleReportsBanner = computed(() => {

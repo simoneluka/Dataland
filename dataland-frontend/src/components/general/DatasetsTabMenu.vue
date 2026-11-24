@@ -64,6 +64,9 @@ const currentTabId = computed<TabInfo['id']>(() => {
   if (myCompanyId && route.path.includes(`/companies/${myCompanyId}`)) {
     return 'my-company';
   }
+  if (route.name === 'Portfolio Comparison' && route.query.source === 'shared') {
+    return 'shared-portfolios';
+  }
 
   return (route.meta.initialTabId as TabInfo['id']) ?? '';
 });

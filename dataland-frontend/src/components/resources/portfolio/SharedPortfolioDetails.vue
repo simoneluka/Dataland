@@ -6,6 +6,13 @@
     <template #actions="{ monitoredTagAttributes, resetFilters, openDownload }">
       <Button @click="openRemoveModal()" data-test="remove-portfolio" label="REMOVE PORTFOLIO" icon="pi pi-times" />
       <Button @click="openDownload" data-test="download-portfolio" label="DOWNLOAD PORTFOLIO" icon="pi pi-download" />
+      <Button
+        :as="RouterLink"
+        :to="{ name: 'Portfolio Comparison', params: { portfolioId: props.portfolioId }, query: { source: 'shared' } }"
+        data-test="compare-portfolio"
+        label="COMPARE PORTFOLIO"
+        icon="pi pi-arrows-h"
+      />
       <Tag v-bind="monitoredTagAttributes" data-test="is-monitored-tag" />
       <Tag v-bind="sharedByTagAttributes" severity="info" data-test="shared-by-tag" />
       <Button
@@ -33,6 +40,7 @@ import PortfolioDetailsBase from '@/components/resources/portfolio/PortfolioDeta
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import { computed, ref, toRef } from 'vue';
+import { RouterLink } from 'vue-router';
 import PortfolioRemoveSharing from '@/components/resources/portfolio/PortfolioRemoveSharing.vue';
 import { type PortfolioUserAccessRight, PortfolioUserAccessRightPortfolioAccessRoleEnum } from '@clients/userservice';
 import { useGetPortfolioAccessRightsQuery } from '@/api-queries/user-service/portfolio/useGetPortfolioAccessRightsQuery.ts';

@@ -62,25 +62,30 @@
                     <div class="col-9 formFields">
                       <FormKit type="group" :name="subcategory.name"
                         ><template v-for="field in subcategory.fields" :key="field.name">
-                          <component
+                          <DocumentedUploadField
                             v-if="field.showIf(companyAssociatedSfdrData.data)"
-                            :is="field.component"
+                            :path="`${category.name}.${subcategory.name}.${field.name}`"
                             :label="field.label"
-                            :placeholder="field.placeholder"
-                            :description="field.description"
-                            :name="field.name"
-                            :options="field.options"
-                            :required="field.required"
-                            :validation="field.validation"
-                            :validation-label="field.validationLabel"
-                            :data-test="field.name"
-                            :unit="field.unit"
-                            @reports-updated="updateDocumentsList"
-                            @field-specific-documents-updated="
-                              updateDocumentsOnField(`${category.name}.${subcategory.name}.${field.name}`, $event)
-                            "
-                            :ref="field.name"
-                          /> </template
+                          >
+                            <component
+                              :is="field.component"
+                              :label="field.label"
+                              :placeholder="field.placeholder"
+                              :description="field.description"
+                              :name="field.name"
+                              :options="field.options"
+                              :required="field.required"
+                              :validation="field.validation"
+                              :validation-label="field.validationLabel"
+                              :data-test="field.name"
+                              :unit="field.unit"
+                              @reports-updated="updateDocumentsList"
+                              @field-specific-documents-updated="
+                                updateDocumentsOnField(`${category.name}.${subcategory.name}.${field.name}`, $event)
+                              "
+                              :ref="field.name"
+                            />
+                          </DocumentedUploadField> </template
                       ></FormKit>
                     </div>
                   </template>
@@ -116,6 +121,7 @@
   </Card>
 </template>
 <script lang="ts">
+import DocumentedUploadField from '@/components/forms/parts/DocumentedUploadField.vue';
 import { FormKit } from '@formkit/vue';
 import { ApiClientProvider } from '@/services/ApiClients';
 import Card from 'primevue/card';
@@ -181,6 +187,7 @@ export default defineComponent({
   },
   name: 'CreateSfdrDataset',
   components: {
+    DocumentedUploadField,
     BaseDataPointFormField,
     SubmitButton,
     SubmitSideBar,

@@ -1,6 +1,8 @@
 <template>
   <template v-for="(cellOrSectionConfig, idx) in config" :key="idx">
-    <template v-if="isCellOrSectionVisible(cellOrSectionConfig, dataAndMetaInfo)">
+    <template
+      v-if="comparisonRows ? comparisonRows.has(idx) : isCellOrSectionVisible(cellOrSectionConfig, dataAndMetaInfo)"
+    >
       <tr
         v-if="cellOrSectionConfig.type == 'cell'"
         v-show="isVisible"
@@ -13,8 +15,15 @@
           data-row-header="true"
         >
           <span class="table-left-label">{{ cellOrSectionConfig.label }}</span>
+          <DataPointDocumentationLink
+            v-if="documentationFields?.frameworkId && documentPath(cellOrSectionConfig.dataPointTypeId)"
+            :framework-id="documentationFields.frameworkId"
+            :path="documentPath(cellOrSectionConfig.dataPointTypeId)"
+            :label="cellOrSectionConfig.label"
+            :description="cellOrSectionConfig.explanation"
+          />
           <em
-            v-if="cellOrSectionConfig.explanation"
+            v-else-if="cellOrSectionConfig.explanation"
             class="material-icons info-icon"
             aria-hidden="true"
             :title="cellOrSectionConfig.label"
@@ -25,22 +34,31 @@
           >
         </td>
         <td
-          v-for="(sinlgeDataAndMetaInfo, idx) in dataAndMetaInfo"
-          :key="idx"
+          v-for="(singleDataAndMetaInfo, columnIndex) in dataAndMetaInfo"
+          :key="columnIndex"
           :data-cell-label="cellOrSectionConfig.label"
-          :data-dataset-index="idx"
-          :style="columnWidthStyle"
+          :data-dataset-index="columnIndex"
+          :style="comparisonRows ? undefined : columnWidthStyle"
           class="vertical-align-top"
         >
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2" :class="{ 'flex-wrap': comparisonRows }">
+            <span v-if="comparisonRows && !comparisonRows.get(idx)?.cells?.[columnIndex]" aria-label="No data">—</span>
             <MultiLayerDataTableCell
-              :content="cellOrSectionConfig.valueGetter(sinlgeDataAndMetaInfo.data)"
-              :meta-info="sinlgeDataAndMetaInfo.metaInfo"
-              :inReviewMode="inReviewMode"
+              v-else
+              :content="
+                comparisonRows
+                  ? (comparisonRows.get(idx)?.cells?.[columnIndex]?.content ?? MLDTDisplayObjectForEmptyString)
+                  : cellOrSectionConfig.valueGetter(singleDataAndMetaInfo.data)
+              "
+              :meta-info="singleDataAndMetaInfo.metaInfo"
+              :inReviewMode="!comparisonRows && inReviewMode"
             />
+            <span v-if="comparisonRows?.get(idx)?.cells?.[columnIndex]?.extremum" class="comparison-extremum">
+              {{ comparisonRows.get(idx)?.cells?.[columnIndex]?.extremum }}
+            </span>
             <PrimeButton
               class="p-0 h-auto"
-              v-if="editModeIsOn"
+              v-if="!comparisonRows && editModeIsOn"
               icon="pi pi-pencil"
               :data-test="'edit-data-point-icon-' + cellOrSectionConfig.dataPointTypeId"
               variant="text"
@@ -50,7 +68,7 @@
                   ? 'Edit Data Point'
                   : 'Currently not implemented'
               "
-              @click.stop="openEditDataPointModal(idx, cellOrSectionConfig)"
+              @click.stop="openEditDataPointModal(columnIndex, cellOrSectionConfig)"
               :pt="{
                 root: {
                   class: isEditComponentAvailable(cellOrSectionConfig.uploadComponentName)
@@ -91,17 +109,19 @@
             />
             <i v-else class="pi pi-chevron-left p-icon p-row-toggler-icon absolute right-0 mr-3" />
             <i
-              v-if="shouldAddCrossedEyeSymbolToSectionLabel(cellOrSectionConfig) && inReviewMode"
+              v-if="!comparisonRows && inReviewMode && shouldAddCrossedEyeSymbolToSectionLabel(cellOrSectionConfig)"
               class="pi pi-eye-slash pr-1 text-red-500"
               aria-hidden="true"
               data-test="hidden-icon"
             />
-            <span
-              v-if="cellOrSectionConfig.labelBadgeColor"
-              :class="`p-badge badge-${cellOrSectionConfig.labelBadgeColor}`"
-              >{{ cellOrSectionConfig.label.toUpperCase() }}
+            <span :class="{ 'comparison-section-title': comparisonRows }">
+              <span
+                v-if="cellOrSectionConfig.labelBadgeColor"
+                :class="`p-badge badge-${cellOrSectionConfig.labelBadgeColor}`"
+                >{{ cellOrSectionConfig.label.toUpperCase() }}
+              </span>
+              <span v-else class="font-medium">{{ cellOrSectionConfig.label }}</span>
             </span>
-            <span v-else class="font-medium">{{ cellOrSectionConfig.label }}</span>
           </td>
         </tr>
         <MultiLayerDataTableBody
@@ -110,6 +130,8 @@
           :isTopLevel="false"
           :isVisible="isVisible && expandedSections.has(idx)"
           :inReviewMode="inReviewMode"
+          :documentation-fields="documentationFields"
+          :comparison-rows="comparisonRows?.get(idx)?.children"
         />
       </template>
     </template>
@@ -120,6 +142,10 @@
 import { type DataAndMetaInformation } from '@/api-models/DataAndMetaInformation';
 import MultiLayerDataTableBody from '@/components/resources/dataTable/MultiLayerDataTableBody.vue';
 import MultiLayerDataTableCell from '@/components/resources/dataTable/MultiLayerDataTableCell.vue';
+import { MLDTDisplayObjectForEmptyString } from '@/components/resources/dataTable/MultiLayerDataTableCellDisplayer';
+import DataPointDocumentationLink from '@/components/resources/DataPointDocumentationLink.vue';
+import type { DocumentationFields } from '@/utils/useFrameworkDocumentationFields.ts';
+import type { ComparisonRows } from '@/components/resources/dataTable/MultiLayerDataTableComparison';
 import {
   isCellOrSectionVisible,
   type MLDTCellConfig,
@@ -223,7 +249,14 @@ const props = defineProps<{
   isTopLevel: boolean;
   isVisible: boolean;
   inReviewMode: boolean;
+  documentationFields?: DocumentationFields;
+  comparisonRows?: ComparisonRows;
 }>();
+
+/** @param id the ID of the displayed data point type */
+function documentPath(id: string | undefined): string {
+  return props.documentationFields?.pathByTypeId.get(id ?? '') ?? '';
+}
 
 onMounted(() => {
   expandSectionsOnPageLoad();
@@ -276,6 +309,12 @@ function openEditDataPointModal(idx: number, cellOrSectionConfig: MLDTCellConfig
 </script>
 
 <style scoped>
+.comparison-section-title {
+  display: inline-block;
+  position: sticky;
+  inset-inline-start: 0.75rem;
+  max-width: clamp(7rem, 33vw, 13rem);
+}
 .info-icon {
   cursor: help;
 }
@@ -286,5 +325,14 @@ function openEditDataPointModal(idx: number, cellOrSectionConfig: MLDTCellConfig
 
 .header-column-width {
   width: 30%;
+}
+
+.comparison-extremum {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
 }
 </style>

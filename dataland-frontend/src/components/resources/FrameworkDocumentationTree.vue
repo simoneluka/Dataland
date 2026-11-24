@@ -1,5 +1,5 @@
 <template>
-  <Card class="w-full" data-test="framework-documentation-page">
+  <Card class="doc-card w-full" data-test="framework-documentation-page">
     <template #title>
       <span data-test="framework-documentation-name">{{ framework?.name ?? frameworkId }}</span>
     </template>
@@ -19,6 +19,7 @@
         <Tree
           v-else
           v-model:selectionKeys="selectionKeys"
+          v-model:expandedKeys="expandedKeys"
           :value="treeNodes"
           selectionMode="single"
           filter
@@ -26,6 +27,7 @@
           filterPlaceholder="Search data points"
           data-test="framework-documentation-tree"
           @node-select="onNodeSelect"
+          @node-unselect="emit('select-data-point-type', undefined)"
         />
       </template>
     </template>
@@ -43,10 +45,13 @@ import { useGetFrameworkSpecificationQuery } from '@/api-queries/specification-s
 import { formatAxiosErrorMessage } from '@/utils/AxiosErrorMessageFormatter.ts';
 import { buildFrameworkSchemaTree, type DataPointLeafData } from '@/utils/FrameworkSchemaParser.ts';
 
-const props = defineProps<{ frameworkId: string }>();
-const emit = defineEmits<{ (e: 'select-data-point-type', id: string | undefined, aliasExport?: string): void }>();
+const props = defineProps<{ frameworkId: string; selectedPath?: string }>();
+const emit = defineEmits<{
+  (e: 'select-data-point-type', id: string | undefined, aliasExport?: string, path?: string): void;
+}>();
 
 const selectionKeys = ref<Record<string, boolean>>({});
+const expandedKeys = ref<Record<string, boolean>>({});
 const {
   data: framework,
   isPending,
@@ -67,8 +72,20 @@ watch(
   () => props.frameworkId,
   () => {
     selectionKeys.value = {};
-    emit('select-data-point-type', undefined);
+    expandedKeys.value = {};
   }
+);
+
+watch(
+  () => [props.frameworkId, props.selectedPath] as const,
+  ([, path]) => {
+    selectionKeys.value = path ? { [path]: true } : {};
+    const segments = path?.split('.') ?? [];
+    for (let index = 1; index < segments.length; index++) {
+      expandedKeys.value[segments.slice(0, index).join('.')] = true;
+    }
+  },
+  { immediate: true }
 );
 
 /**
@@ -77,6 +94,18 @@ watch(
  * @param node the selected tree node
  */
 function onNodeSelect(node: TreeNode): void {
-  emit('select-data-point-type', (node.data as DataPointLeafData).id, (node.data as DataPointLeafData).aliasExport);
+  const { id, aliasExport } = node.data as DataPointLeafData;
+  emit('select-data-point-type', id, aliasExport, node.key);
 }
 </script>
+
+<style scoped>
+.doc-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.doc-card :deep(.p-tree-node-label) {
+  min-width: 0;
+}
+</style>

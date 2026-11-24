@@ -14,6 +14,7 @@ const DatasetOverview = (): Promise<RouteComponent> => import('@/components/page
 const MyDataRequestsOverview = (): Promise<RouteComponent> => import('@/components/pages/MyDataRequestsOverview.vue');
 
 const PortfolioOverview = (): Promise<RouteComponent> => import('@/components/pages/PortfolioOverview.vue');
+const PortfolioComparisonPage = (): Promise<RouteComponent> => import('@/components/pages/PortfolioComparisonPage.vue');
 const SharedPortfolioOverview = (): Promise<RouteComponent> => import('@/components/pages/SharedPortfolioOverview.vue');
 const ViewDataRequestPage = (): Promise<RouteComponent> => import('@/components/pages/ViewDataRequestPage.vue');
 
@@ -200,6 +201,19 @@ const routes = [
     path: '/portfolios',
     name: 'Portfolio Overview',
     component: PortfolioOverview,
+    meta: {
+      initialTabId: 'my-portfolios',
+      requiresAuthentication: true,
+    },
+  },
+  {
+    path: '/portfolios/:portfolioId/compare',
+    name: 'Portfolio Comparison',
+    component: PortfolioComparisonPage,
+    props: (route: RouteLocationNormalized): { portfolioId: string; isSharedPortfolio: boolean } => ({
+      portfolioId: route.params.portfolioId as string,
+      isSharedPortfolio: route.query.source === 'shared',
+    }),
     meta: {
       initialTabId: 'my-portfolios',
       requiresAuthentication: true,

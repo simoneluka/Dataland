@@ -23,6 +23,7 @@
       :reports="sortedReports"
     />
     <MultiLayerDataTable
+      :documentation-fields="documentationFields"
       :dataAndMetaInfo="sortedDataAndMetaInfo"
       :inReviewMode="inReviewMode"
       :config="
@@ -69,6 +70,7 @@ import { AxiosError } from 'axios';
 import { useGetAllCompanyFrameworkDataQuery } from '@/api-queries/backend/framework-data/useGetAllCompanyFrameworkDataQuery';
 import { useGetFrameworkDataQuery } from '@/api-queries/backend/framework-data/useGetFrameworkDataQuery';
 import { useGetCompanyAssociatedDataByDimensionsQuery } from '@/api-queries/backend/framework-data/useGetCompanyAssociatedDataByDimensionsQuery';
+import { useFrameworkDocumentationFields } from '@/utils/useFrameworkDocumentationFields.ts';
 
 type ViewPanelStates = 'LoadingDatasets' | 'DisplayingDatasets' | 'Error' | 'InsufficientRights';
 
@@ -83,6 +85,7 @@ const props = defineProps<{
 }>();
 
 const hideEmptyFields = computed<boolean | undefined>(() => injectHideEmptyFields?.value);
+const documentationFields = useFrameworkDocumentationFields(() => props.frameworkIdentifier);
 const frameworkDisplayName = computed(() => humanizeStringOrNumber(props.frameworkIdentifier));
 const sortedDataAndMetaInfo = computed(() => {
   return sortDatasetsByReportingPeriod([...rawDataAndMetaInfoForDisplay.value]);

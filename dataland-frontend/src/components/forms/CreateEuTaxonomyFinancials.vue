@@ -64,22 +64,27 @@
                     <div class="col-9 formFields">
                       <FormKit type="group" :name="subcategory.name"
                         ><template v-for="field in subcategory.fields" :key="field.name">
-                          <component
+                          <DocumentedUploadField
                             v-if="field.showIf(companyAssociatedEuTaxonomyFinancialsData.data)"
-                            :is="field.component"
+                            :path="`${category.name}.${subcategory.name}.${field.name}`"
                             :label="field.label"
-                            :placeholder="field.placeholder"
-                            :description="field.description"
-                            :name="field.name"
-                            :options="field.options"
-                            :required="field.required"
-                            :validation="field.validation"
-                            :validation-label="field.validationLabel"
-                            :data-test="field.name"
-                            :unit="field.unit"
-                            @reports-updated="updateReportsSelection"
-                            :ref="field.name"
-                          /> </template
+                          >
+                            <component
+                              :is="field.component"
+                              :label="field.label"
+                              :placeholder="field.placeholder"
+                              :description="field.description"
+                              :name="field.name"
+                              :options="field.options"
+                              :required="field.required"
+                              :validation="field.validation"
+                              :validation-label="field.validationLabel"
+                              :data-test="field.name"
+                              :unit="field.unit"
+                              @reports-updated="updateReportsSelection"
+                              :ref="field.name"
+                            />
+                          </DocumentedUploadField> </template
                       ></FormKit>
                     </div>
                   </template>
@@ -115,6 +120,7 @@
   </Card>
 </template>
 <script lang="ts">
+import DocumentedUploadField from '@/components/forms/parts/DocumentedUploadField.vue';
 import UploadFormHeader from '@/components/forms/parts/elements/basic/UploadFormHeader.vue';
 import BigDecimalExtendedDataPointFormField from '@/components/forms/parts/fields/BigDecimalExtendedDataPointFormField.vue';
 import CurrencyExtendedDataPointFormField from '@/components/forms/parts/fields/CurrencyExtendedDataPointFormField.vue';
@@ -180,6 +186,7 @@ export default defineComponent({
   },
   name: 'CreateEuTaxonomyFinancials',
   components: {
+    DocumentedUploadField,
     SubmitButton,
     SubmitSideBar,
     UploadFormHeader,

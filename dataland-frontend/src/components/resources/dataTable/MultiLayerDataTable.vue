@@ -1,19 +1,44 @@
 <template>
-  <div class="p-datatable p-component">
-    <div class="p-datatable-wrapper overflow-auto">
-      <table class="p-datatable-table" :aria-label="ariaLabel">
+  <div class="p-datatable p-component" :class="{ 'comparison-table': comparisonColumns }">
+    <div class="p-datatable-wrapper overflow-auto" :tabindex="comparisonColumns ? 0 : undefined">
+      <table
+        class="p-datatable-table"
+        :aria-label="ariaLabel"
+        :style="comparisonColumns ? { minWidth: `${14 + 11 * comparisonColumns.length}rem` } : undefined"
+      >
         <thead class="p-datatable-thead">
           <tr class="border-bottom-table">
-            <th class="horizontal-headers-size">
+            <th class="horizontal-headers-size" scope="col">
               <div class="p-column-header-content">
                 <span class="p-column-title">KPIs</span>
               </div>
             </th>
+            <template v-if="comparisonColumns">
+              <th
+                v-for="(column, idx) in comparisonColumns"
+                :key="column.companyId"
+                :data-dataset-index="idx"
+                :data-status="column.status"
+                scope="col"
+              >
+                <RouterLink
+                  class="comparison-company-link"
+                  :to="{ name: 'Company Cockpit', params: { companyId: column.companyId } }"
+                >
+                  {{ column.companyName }}
+                </RouterLink>
+                <span v-if="column.status !== 'available'" class="comparison-status">
+                  {{ comparisonStatusLabels[column.status] }}
+                </span>
+              </th>
+            </template>
             <th
+              v-else
               v-for="(singleDataAndMetaInfo, idx) in dataAndMetaInfo"
               :key="idx"
               class="horizontal-headers-size"
               :data-dataset-index="idx"
+              scope="col"
             >
               <div class="p-column-header-content">
                 <span class="p-column-title" style="display: flex; align-items: center">
@@ -25,6 +50,7 @@
         </thead>
         <tbody class="p-datatable-tbody">
           <tr
+            v-if="!comparisonColumns"
             v-show="
               !hideEmptyFields ||
               dataAndMetaInfo.some((singleDataAndMetaInfo) => singleDataAndMetaInfo.metaInfo.uploadTime != null)
@@ -47,7 +73,7 @@
               </span>
             </td>
           </tr>
-          <tr v-show="!hideEmptyFields || hasPublicationDate()">
+          <tr v-if="!comparisonColumns" v-show="!hideEmptyFields || hasPublicationDate()">
             <td class="headers-bg pl-4 vertical-align-top header-column-width" data-row-header="true">
               <span class="table-left-label">Publication date of most recent report</span>
               <em
@@ -77,7 +103,14 @@
             :config="config"
             :isTopLevel="true"
             :isVisible="true"
+            :documentation-fields="documentationFields"
+            :comparison-rows="comparisonRows"
           />
+          <tr v-if="comparisonStatus">
+            <td :colspan="(comparisonColumns?.length ?? 0) + 1">
+              <span role="status">{{ comparisonStatus }}</span>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -96,6 +129,13 @@ import { type MLDTConfig } from '@/components/resources/dataTable/MultiLayerData
 import MultiLayerDataTableBody from '@/components/resources/dataTable/MultiLayerDataTableBody.vue';
 import { type DataAndMetaInformation } from '@/api-models/DataAndMetaInformation';
 import Tooltip from 'primevue/tooltip';
+import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
+import type { DocumentationFields } from '@/utils/useFrameworkDocumentationFields.ts';
+import {
+  buildComparisonRows,
+  type ComparisonColumn,
+} from '@/components/resources/dataTable/MultiLayerDataTableComparison';
 import { convertUnixTimeInMsToDateString, dateStringFormatter } from '@/utils/DataFormatUtils';
 import {
   type CompanyReport,
@@ -187,7 +227,41 @@ const props = defineProps<{
   ariaLabel: string;
   inReviewMode: boolean;
   hideEmptyFields: boolean;
+  /** In comparison mode the schema paths also identify raw values for comparison. */
+  documentationFields?: DocumentationFields;
+  /** One column per dataset, in selection order, including placeholders. */
+  comparisonColumns?: readonly ComparisonColumn[];
+  showDifferencesOnly?: boolean;
 }>();
+
+const comparisonStatusLabels: Record<Exclude<ComparisonColumn['status'], 'available'>, string> = {
+  loading: 'Loading…',
+  missing: 'No dataset',
+  error: 'Could not load dataset',
+};
+
+const comparison = computed(() =>
+  props.comparisonColumns
+    ? buildComparisonRows<T>(props.config, props.dataAndMetaInfo, props.comparisonColumns, {
+        differencesOnly: props.showDifferencesOnly ?? false,
+        hideEmptyFields: props.hideEmptyFields,
+        documentationFields: props.documentationFields,
+      })
+    : undefined
+);
+const comparisonRows = computed(() => comparison.value?.rows);
+
+const comparisonStatus = computed(() => {
+  const columns = props.comparisonColumns;
+  const result = comparison.value;
+  if (!columns || !result) return undefined;
+  if (columns.some(({ status }) => status === 'loading')) return 'Loading company datasets…';
+  if (!result.hasData) return 'No KPI data to show for the selected framework and reporting period.';
+  if (props.showDifferencesOnly && result.rows.size === 0) {
+    return 'No comparable scalar differences in the available datasets.';
+  }
+  return undefined;
+});
 </script>
 <style scoped>
 .info-icon {
@@ -196,5 +270,45 @@ const props = defineProps<{
 
 .border-bottom-table {
   border-bottom: 1px solid var(--table-border);
+}
+
+.comparison-table {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.comparison-table .p-datatable-table {
+  width: 100%;
+  table-layout: fixed;
+  overflow-wrap: anywhere;
+}
+
+.comparison-table th {
+  vertical-align: top;
+  white-space: normal;
+}
+
+.comparison-table thead th:first-child,
+.comparison-table :deep([data-row-header='true']) {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: var(--p-datatable-header-cell-background, var(--p-content-background, white));
+  border-inline-end: 1px solid var(--table-border);
+}
+
+.comparison-table thead th:first-child {
+  width: clamp(8rem, 36vw, 14rem);
+}
+
+.comparison-company-link {
+  text-decoration: underline;
+}
+
+.comparison-status {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: normal;
 }
 </style>

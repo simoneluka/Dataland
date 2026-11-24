@@ -1,4 +1,12 @@
 <template>
+  <div v-if="documentationFields.frameworkId && documentationPath" class="flex justify-content-end mb-2">
+    <DataPointDocumentationLink
+      :framework-id="documentationFields.frameworkId"
+      :path="documentationPath"
+      label="this data point"
+      @click="dialogRef?.close()"
+    />
+  </div>
   <component ref="componentRef" :is="resolvedComponent" :extendedDataPointObject="extendedDataPointObject" />
   <Message v-if="errorMessage" severity="error" :life="3000">
     {{ errorMessage }}
@@ -24,6 +32,8 @@ import type { DynamicDialogInstance } from 'primevue/dynamicdialogoptions';
 import { QualityOptions } from '@clients/backend';
 import { componentDictionary } from '@/components/resources/dataTable/EditDataPointComponentDictionary.ts';
 import Message from 'primevue/message';
+import DataPointDocumentationLink from '@/components/resources/DataPointDocumentationLink.vue';
+import { useFrameworkDocumentationFields } from '@/utils/useFrameworkDocumentationFields.ts';
 import { AxiosError } from 'axios';
 import type { ExtendedDataPointType } from '@/components/resources/dataTable/conversion/Utils.ts';
 import { useSaveDataPointAwaitingActivation } from '@/utils/useSaveDataPointAwaitingActivation.ts';
@@ -37,6 +47,8 @@ const companyId = dialogRef?.value?.data?.companyId;
 const reportingPeriod = dialogRef?.value?.data?.reportingPeriod;
 const uploadComponentName = dialogRef?.value?.data?.uploadComponentName;
 const dataPointTypeId = dialogRef?.value?.data?.dataPointTypeId;
+const documentationFields = useFrameworkDocumentationFields(() => dialogRef?.value?.data?.dataType);
+const documentationPath = computed(() => documentationFields.value.pathByTypeId.get(dataPointTypeId));
 const dataPoint = dialogRef?.value?.data?.dataPoint;
 const resolvedComponent = computed<Component | null>(() => {
   return componentDictionary[uploadComponentName ?? ''] ?? null;

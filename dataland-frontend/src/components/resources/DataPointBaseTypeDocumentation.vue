@@ -1,5 +1,5 @@
 <template>
-  <Card class="w-full" data-test="base-type-documentation">
+  <Card class="doc-card w-full" data-test="base-type-documentation">
     <template #title>Base type</template>
     <template #content>
       <div v-if="isPending" class="flex justify-content-center py-4"><DatalandProgressSpinner /></div>
@@ -14,7 +14,7 @@
           Validated by: <code>{{ baseType.validatedBy }}</code>
         </p>
         <p class="mb-1">Example:</p>
-        <pre class="mt-0 surface-ground p-2 border-round overflow-auto">{{
+        <pre class="example-json mt-0 surface-ground p-2 border-round">{{
           JSON.stringify(baseType.example, null, 2)
         }}</pre>
         <p class="mb-1">Used by data point types:</p>
@@ -41,3 +41,14 @@ const {
   error,
 } = useGetDataPointBaseTypeSpecificationQuery({ dataPointBaseTypeId: () => props.dataPointBaseTypeId });
 </script>
+
+<style scoped>
+.doc-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.example-json {
+  white-space: pre-wrap;
+}
+</style>

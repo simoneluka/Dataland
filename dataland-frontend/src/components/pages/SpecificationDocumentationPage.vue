@@ -3,7 +3,7 @@
     <h1 class="m-0 mb-2">Framework Documentation</h1>
     <p class="mt-0 mb-4">
       Browse the frameworks supported by Dataland and explore the data points they consist of, including their business
-      definitions.
+      definitions. The info icon next to a documented dataset field opens the matching data point here.
     </p>
 
     <div class="flex flex-column lg:flex-row gap-4 align-items-start">
@@ -24,19 +24,17 @@
                 class="w-full"
               />
             </IconField>
-            <ul class="list-none p-0 m-0" data-test="specification-documentation-table">
-              <li v-if="filteredFrameworks.length === 0">No frameworks found.</li>
-              <li v-for="framework in filteredFrameworks" :key="framework.framework.id">
-                <router-link
-                  :to="`/documentation/frameworks/${framework.framework.id}`"
-                  class="block py-2 no-underline"
-                  :class="{ 'font-bold': framework.framework.id === selectedFrameworkId }"
-                  :data-test="`framework-link-${framework.framework.id}`"
-                >
-                  {{ framework.name }}
-                </router-link>
-              </li>
-            </ul>
+            <Listbox
+              :model-value="selectedFrameworkId"
+              :options="filteredFrameworks"
+              option-label="name"
+              option-value="framework.id"
+              empty-message="No frameworks found."
+              scroll-height="auto"
+              class="w-full"
+              data-test="specification-documentation-table"
+              @update:model-value="onSelectFramework"
+            />
           </template>
         </template>
       </Card>
@@ -45,35 +43,33 @@
         v-if="selectedFrameworkId"
         class="flex-1"
         :framework-id="selectedFrameworkId"
+        :selected-path="selectedDataPoint ? selectedDataPointPath : undefined"
         @select-data-point-type="onSelectDataPointType"
       />
-      <p v-else class="mt-0" data-test="specification-documentation-placeholder">
-        Select a framework to see its documentation.
-      </p>
+      <Card v-else class="w-full flex-1" data-test="specification-documentation-placeholder">
+        <template #content>Select a framework to see its documentation.</template>
+      </Card>
 
-      <DataPointTypeDocumentation
-        v-if="selectedDataPointTypeId"
-        class="w-full lg:w-20rem flex-shrink-0"
-        :data-point-type-id="selectedDataPointTypeId"
-        :alias-export="selectedAliasExport"
-        @select-base-type="selectedBaseTypeId = $event"
-      />
-      <DataPointBaseTypeDocumentation
-        v-if="selectedDataPointTypeId && selectedBaseTypeId"
-        class="w-full lg:w-20rem flex-shrink-0"
-        :data-point-base-type-id="selectedBaseTypeId"
-      />
+      <aside v-if="selectedDataPoint" class="flex flex-column gap-3 w-full lg:w-20rem flex-shrink-0">
+        <DataPointTypeDocumentation
+          :data-point-type-id="selectedDataPoint.id"
+          :alias-export="selectedDataPoint.aliasExport"
+          @select-base-type="selectedBaseTypeId = $event"
+        />
+        <DataPointBaseTypeDocumentation v-if="selectedBaseTypeId" :data-point-base-type-id="selectedBaseTypeId" />
+      </aside>
     </div>
   </TheContent>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import Card from 'primevue/card';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
+import Listbox from 'primevue/listbox';
 import Message from 'primevue/message';
 import TheContent from '@/components/generics/TheContent.vue';
 import DatalandProgressSpinner from '@/components/general/DatalandProgressSpinner.vue';
@@ -82,15 +78,24 @@ import DataPointTypeDocumentation from '@/components/resources/DataPointTypeDocu
 import DataPointBaseTypeDocumentation from '@/components/resources/DataPointBaseTypeDocumentation.vue';
 import { useListFrameworkSpecificationsQuery } from '@/api-queries/specification-service/specification/useListFrameworkSpecificationsQuery.ts';
 import { formatAxiosErrorMessage } from '@/utils/AxiosErrorMessageFormatter.ts';
+import { useFrameworkDocumentationFields } from '@/utils/useFrameworkDocumentationFields.ts';
 
 const route = useRoute();
+const router = useRouter();
 const searchText = ref('');
-const selectedDataPointTypeId = ref<string | undefined>();
-const selectedAliasExport = ref<string | undefined>();
 const selectedBaseTypeId = ref<string | undefined>();
 const { data: frameworks, isPending, isError, error } = useListFrameworkSpecificationsQuery();
 
 const selectedFrameworkId = computed(() => (route.params.frameworkId as string | undefined) || undefined);
+const selectedDataPointPath = computed(() =>
+  typeof route.query.dataPoint === 'string' ? route.query.dataPoint : undefined
+);
+const documentationFields = useFrameworkDocumentationFields(() => selectedFrameworkId.value);
+const selectedDataPoint = computed(() => documentationFields.value.byPath.get(selectedDataPointPath.value ?? ''));
+
+watch([selectedFrameworkId, selectedDataPointPath], () => {
+  selectedBaseTypeId.value = undefined;
+});
 
 const filteredFrameworks = computed(() => {
   const search = searchText.value.trim().toLowerCase();
@@ -101,14 +106,26 @@ const filteredFrameworks = computed(() => {
 });
 
 /**
- * Stores the selected data point type and closes the base type panel.
+ * Navigates to the documentation of the selected framework.
  *
- * @param id id of the selected data point type, undefined if the selection was reset
- * @param aliasExport export alias of the selected field, if any
+ * @param frameworkId id of the selected framework, null if the selection was cleared
  */
-function onSelectDataPointType(id: string | undefined, aliasExport?: string): void {
-  selectedDataPointTypeId.value = id;
-  selectedAliasExport.value = aliasExport;
-  selectedBaseTypeId.value = undefined;
+async function onSelectFramework(frameworkId: string | null): Promise<void> {
+  if (frameworkId) await router.push(`/documentation/frameworks/${frameworkId}`);
+}
+
+/**
+ * Navigates to the selected schema field so that its documentation can be linked directly.
+ *
+ * @param _id id of the selected data point type
+ * @param _aliasExport export alias of the selected field
+ * @param path schema path of the selected field, undefined when deselected
+ */
+async function onSelectDataPointType(_id: string | undefined, _aliasExport?: string, path?: string): Promise<void> {
+  await router.push({
+    name: 'Framework Documentation Details',
+    params: { frameworkId: selectedFrameworkId.value },
+    query: { dataPoint: path },
+  });
 }
 </script>

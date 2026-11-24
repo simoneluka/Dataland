@@ -48,21 +48,26 @@
                   <div class="form-field-container">
                     <FormKit type="group" :name="subcategory.name"
                       ><template v-for="field in subcategory.fields" :key="field.name">
-                        <component
+                        <DocumentedUploadField
                           v-if="field.showIf(companyAssociatedDataPcafData?.data as PcafData)"
-                          :is="getComponentByName(field.component)"
+                          :path="`${category.name}.${subcategory.name}.${field.name}`"
                           :label="field.label"
-                          :placeholder="field.placeholder"
-                          :description="field.description"
-                          :name="field.name"
-                          :options="field.options"
-                          :required="field.required"
-                          :validation="field.validation"
-                          :validation-label="field.validationLabel"
-                          :data-test="field.name"
-                          :unit="field.unit"
-                          @reports-updated="updateDocumentsList"
-                        /> </template
+                        >
+                          <component
+                            :is="getComponentByName(field.component)"
+                            :label="field.label"
+                            :placeholder="field.placeholder"
+                            :description="field.description"
+                            :name="field.name"
+                            :options="field.options"
+                            :required="field.required"
+                            :validation="field.validation"
+                            :validation-label="field.validationLabel"
+                            :data-test="field.name"
+                            :unit="field.unit"
+                            @reports-updated="updateDocumentsList"
+                          />
+                        </DocumentedUploadField> </template
                     ></FormKit>
                   </div>
                 </div>
@@ -112,6 +117,7 @@
 </template>
 
 <script setup lang="ts">
+import DocumentedUploadField from '@/components/forms/parts/DocumentedUploadField.vue';
 import UploadFormHeader from '@/components/forms/parts/elements/basic/UploadFormHeader.vue';
 import { getComponentByName } from '@/components/forms/UploadPageComponentDictionary.ts';
 import { getBasePublicFrameworkDefinition } from '@/frameworks/BasePublicFrameworkRegistry';

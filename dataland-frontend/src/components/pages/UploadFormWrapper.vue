@@ -23,12 +23,21 @@ import AuthorizationWrapper from '@/components/wrapper/AuthorizationWrapper.vue'
 import MarginWrapper from '@/components/wrapper/MarginWrapper.vue';
 import { KEYCLOAK_ROLE_UPLOADER } from '@/utils/KeycloakRoles';
 import { DataTypeEnum } from '@clients/backend';
-import { computed } from 'vue';
+import { computed, provide } from 'vue';
+import {
+  uploadDocumentationFieldsKey,
+  useFrameworkDocumentationFields,
+} from '@/utils/useFrameworkDocumentationFields.ts';
 
 const props = defineProps<{
   companyID: string;
   frameworkType: string;
 }>();
+
+provide(
+  uploadDocumentationFieldsKey,
+  useFrameworkDocumentationFields(() => props.frameworkType)
+);
 
 const frameworkToUploadComponent = computed(() => {
   switch (props.frameworkType) {
